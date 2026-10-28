@@ -7,10 +7,10 @@ const statusText = document.getElementById("status");
 const unlockButton = document.getElementById("unlockButton");
 const replayButton = document.getElementById("replayButton");
 const codeDisplay = document.getElementById("codeDisplay");
-const keypad = document.getElementById("keypad");
+const digitControls = document.getElementById("codeDisplay");
 const canvas = document.getElementById("heartCanvas");
-const ctx = canvas.getContext("2d");
-let enteredCode = "", isUnlocking = false, particles = [], animationId;
+const ctx = canvas ? canvas.getContext("2d") : null;
+let digits = [0, 0, 0], isUnlocking = false, particles = [], animationId;
 let canvasWidth = 0, canvasHeight = 0;
 const colors = ["#ff5ca8", "#ff9bc7", "#ffd1e4", "#c78aff", "#fff0f7"];
 
@@ -38,66 +38,53 @@ for (let i = 0; i < 38; i++) {
   floatingLayer.appendChild(dot);
 }
 
-// Keypad
+// Three independent digit wheels. Values wrap around: 0 - 1 becomes 9,
+// and 9 + 1 becomes 0.
 function renderCode() {
-  codeDisplay.querySelectorAll(".code-digit").forEach((slot, i) => {
-    const digit = enteredCode[i];
-    slot.textContent = digit || "";
-    slot.classList.toggle("filled", Boolean(digit));
+  digitControls.querySelectorAll(".code-digit").forEach((slot, index) => {
+    slot.textContent = String(digits[index]);
   });
 }
-function addDigit(digit) {
-  if (isUnlocking || enteredCode.length >= 3) return;
-  enteredCode += digit;
-  statusText.textContent = "A little surprise is waiting...";
-  statusText.classList.remove("error");
-  renderCode();
-}
-function clearCode() {
+function changeDigit(index, step) {
   if (isUnlocking) return;
-  enteredCode = "";
+  digits[index] = (digits[index] + step + 10) % 10;
   renderCode();
   statusText.textContent = "A little surprise is waiting...";
   statusText.classList.remove("error");
 }
-function deleteDigit() {
-  if (isUnlocking) return;
-  enteredCode = enteredCode.slice(0, -1);
-  renderCode();
-}
-keypad.addEventListener("click", event => {
-  const button = event.target.closest("button[data-key]");
+digitControls.addEventListener("click", event => {
+  const button = event.target.closest("button[data-index][data-step]");
   if (!button) return;
-  const key = button.dataset.key;
-  if (key === "clear") clearCode();
-  else if (key === "back") deleteDigit();
-  else addDigit(key);
+  changeDigit(Number(button.dataset.index), Number(button.dataset.step));
 });
+
+// Keyboard support: left/right selects a digit, up/down changes it.
+let selectedDigit = 0;
 document.addEventListener("keydown", event => {
-  if (lockScreen.style.display === "none" || isUnlocking) return;
-  if (/^[0-9]$/.test(event.key)) addDigit(event.key);
-  else if (event.key === "Backspace") deleteDigit();
-  else if (event.key === "Escape") clearCode();
+  if (isUnlocking || lockScreen.style.display === "none") return;
+  if (event.key === "ArrowLeft") { selectedDigit = Math.max(0, selectedDigit - 1); event.preventDefault(); }
+  else if (event.key === "ArrowRight") { selectedDigit = Math.min(2, selectedDigit + 1); event.preventDefault(); }
+  else if (event.key === "ArrowUp") { changeDigit(selectedDigit, 1); event.preventDefault(); }
+  else if (event.key === "ArrowDown") { changeDigit(selectedDigit, -1); event.preventDefault(); }
   else if (event.key === "Enter") unlock();
 });
 
 // Unlock animation
 function unlock() {
   if (isUnlocking) return;
+  const enteredCode = digits.join("");
   if (enteredCode !== SECRET_CODE) {
     statusText.textContent = "Not quite! Try another code.";
     statusText.classList.add("error");
     lockCard.classList.remove("wrong");
     void lockCard.offsetWidth;
     lockCard.classList.add("wrong");
-    enteredCode = "";
-    renderCode();
     return;
   }
   isUnlocking = true;
   statusText.textContent = "The lock is opening...";
   unlockButton.disabled = true;
-  keypad.querySelectorAll("button").forEach(button => button.disabled = true);
+  digitControls.querySelectorAll("button").forEach(button => button.disabled = true);
   lockCard.classList.add("unlocking");
   setTimeout(() => {
     lockScreen.classList.add("hide");
@@ -105,6 +92,7 @@ function unlock() {
       lockScreen.style.display = "none";
       surpriseScreen.classList.add("visible");
       surpriseScreen.setAttribute("aria-hidden", "false");
+      document.body.classList.add("particles-active");
       resizeCanvas();
       createSceneParticles();
       animateParticles();

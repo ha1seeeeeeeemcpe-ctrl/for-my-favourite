@@ -30,25 +30,22 @@
           <div class="lock-heart">♥</div>
           <p class="keypad-title">ENTER THE SECRET CODE</p>
 
-          <div class="code-display" id="codeDisplay" aria-label="Entered code">
-            <span class="code-digit"></span>
-            <span class="code-digit"></span>
-            <span class="code-digit"></span>
-          </div>
-
-          <div class="keypad" id="keypad" aria-label="Number keypad">
-            <button class="key" data-key="1" type="button">1</button>
-            <button class="key" data-key="2" type="button">2</button>
-            <button class="key" data-key="3" type="button">3</button>
-            <button class="key" data-key="4" type="button">4</button>
-            <button class="key" data-key="5" type="button">5</button>
-            <button class="key" data-key="6" type="button">6</button>
-            <button class="key" data-key="7" type="button">7</button>
-            <button class="key" data-key="8" type="button">8</button>
-            <button class="key" data-key="9" type="button">9</button>
-            <button class="key key-action" data-key="clear" type="button" aria-label="Clear code">C</button>
-            <button class="key" data-key="0" type="button">0</button>
-            <button class="key key-action" data-key="back" type="button" aria-label="Delete last digit">⌫</button>
+          <div class="code-display" id="codeDisplay" aria-label="Choose the three-digit secret code">
+            <div class="digit-column">
+              <button class="digit-step" type="button" data-index="0" data-step="1" aria-label="Increase first digit">＋</button>
+              <span class="code-digit">0</span>
+              <button class="digit-step" type="button" data-index="0" data-step="-1" aria-label="Decrease first digit">−</button>
+            </div>
+            <div class="digit-column">
+              <button class="digit-step" type="button" data-index="1" data-step="1" aria-label="Increase second digit">＋</button>
+              <span class="code-digit">0</span>
+              <button class="digit-step" type="button" data-index="1" data-step="-1" aria-label="Decrease second digit">−</button>
+            </div>
+            <div class="digit-column">
+              <button class="digit-step" type="button" data-index="2" data-step="1" aria-label="Increase third digit">＋</button>
+              <span class="code-digit">0</span>
+              <button class="digit-step" type="button" data-index="2" data-step="-1" aria-label="Decrease third digit">−</button>
+            </div>
           </div>
 
           <p class="lock-hint" id="status" aria-live="polite">A little surprise is waiting...</p>
