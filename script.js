@@ -1,19 +1,20 @@
-// ===== SETTINGS =====
-const SECRET_CODE = "129";
 
-// ===== ELEMENTS =====
+const SECRET_CODE = "129";
 const lockScreen = document.getElementById("lockScreen");
+const lockCard = document.getElementById("lockCard");
 const surpriseScreen = document.getElementById("surpriseScreen");
-const codeInput = document.getElementById("codeInput");
 const statusText = document.getElementById("status");
 const unlockButton = document.getElementById("unlockButton");
 const replayButton = document.getElementById("replayButton");
-const musicButton = document.getElementById("musicButton");
-const musicLabel = document.getElementById("musicLabel");
+const codeDisplay = document.getElementById("codeDisplay");
+const keypad = document.getElementById("keypad");
 const canvas = document.getElementById("heartCanvas");
 const ctx = canvas.getContext("2d");
+let enteredCode = "", isUnlocking = false, particles = [], animationId;
+let canvasWidth = 0, canvasHeight = 0;
+const colors = ["#ff5ca8", "#ff9bc7", "#ffd1e4", "#c78aff", "#fff0f7"];
 
-// ===== FLOATING BACKGROUND HEARTS =====
+// Floating background decorations
 const floatingLayer = document.querySelector(".floating-hearts");
 for (let i = 0; i < 24; i++) {
   const heart = document.createElement("span");
@@ -25,8 +26,6 @@ for (let i = 0; i < 24; i++) {
   heart.style.animationDelay = `${-Math.random() * 25}s`;
   floatingLayer.appendChild(heart);
 }
-
-// Small, slow-moving light particles across the whole page.
 for (let i = 0; i < 38; i++) {
   const dot = document.createElement("span");
   dot.className = "float-dot";
@@ -39,104 +38,160 @@ for (let i = 0; i < 38; i++) {
   floatingLayer.appendChild(dot);
 }
 
-// ===== CODE CHECK =====
+// Keypad
+function renderCode() {
+  codeDisplay.querySelectorAll(".code-digit").forEach((slot, i) => {
+    const digit = enteredCode[i];
+    slot.textContent = digit || "";
+    slot.classList.toggle("filled", Boolean(digit));
+  });
+}
+function addDigit(digit) {
+  if (isUnlocking || enteredCode.length >= 3) return;
+  enteredCode += digit;
+  statusText.textContent = "A little surprise is waiting...";
+  statusText.classList.remove("error");
+  renderCode();
+}
+function clearCode() {
+  if (isUnlocking) return;
+  enteredCode = "";
+  renderCode();
+  statusText.textContent = "A little surprise is waiting...";
+  statusText.classList.remove("error");
+}
+function deleteDigit() {
+  if (isUnlocking) return;
+  enteredCode = enteredCode.slice(0, -1);
+  renderCode();
+}
+keypad.addEventListener("click", event => {
+  const button = event.target.closest("button[data-key]");
+  if (!button) return;
+  const key = button.dataset.key;
+  if (key === "clear") clearCode();
+  else if (key === "back") deleteDigit();
+  else addDigit(key);
+});
+document.addEventListener("keydown", event => {
+  if (lockScreen.style.display === "none" || isUnlocking) return;
+  if (/^[0-9]$/.test(event.key)) addDigit(event.key);
+  else if (event.key === "Backspace") deleteDigit();
+  else if (event.key === "Escape") clearCode();
+  else if (event.key === "Enter") unlock();
+});
+
+// Unlock animation
 function unlock() {
-  const entered = codeInput.value.trim();
-  if (entered !== SECRET_CODE) {
-    statusText.textContent = "That's not the right code. Try again.";
+  if (isUnlocking) return;
+  if (enteredCode !== SECRET_CODE) {
+    statusText.textContent = "Not quite! Try another code.";
     statusText.classList.add("error");
-    codeInput.value = "";
-    codeInput.focus();
+    lockCard.classList.remove("wrong");
+    void lockCard.offsetWidth;
+    lockCard.classList.add("wrong");
+    enteredCode = "";
+    renderCode();
     return;
   }
-
-  statusText.textContent = "Unlocked with love!";
-  statusText.classList.remove("error");
-  lockScreen.classList.add("hide");
+  isUnlocking = true;
+  statusText.textContent = "The lock is opening...";
+  unlockButton.disabled = true;
+  keypad.querySelectorAll("button").forEach(button => button.disabled = true);
+  lockCard.classList.add("unlocking");
   setTimeout(() => {
-    lockScreen.style.display = "none";
-    surpriseScreen.classList.add("visible");
-    surpriseScreen.setAttribute("aria-hidden", "false");
-    resizeCanvas();
-    createHeartParticles();
-    animateParticles();
-    startMusic(); // Starts only after the visitor interacts with the page.
-  }, 550);
+    lockScreen.classList.add("hide");
+    setTimeout(() => {
+      lockScreen.style.display = "none";
+      surpriseScreen.classList.add("visible");
+      surpriseScreen.setAttribute("aria-hidden", "false");
+      resizeCanvas();
+      createSceneParticles();
+      animateParticles();
+    }, 480);
+  }, 760);
 }
 unlockButton.addEventListener("click", unlock);
-codeInput.addEventListener("keydown", event => {
-  if (event.key === "Enter") unlock();
-});
-codeInput.addEventListener("input", () => {
-  codeInput.value = codeInput.value.replace(/[^0-9]/g, "").slice(0, 3);
-  statusText.textContent = "Enter the secret code";
-  statusText.classList.remove("error");
-});
 
-// ===== PARTICLE HEART =====
-let particles = [];
-let animationId;
-let canvasWidth = 0;
-let canvasHeight = 0;
-
+// Full-screen particle scene
 function resizeCanvas() {
-  const rect = canvas.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvasWidth = rect.width;
-  canvasHeight = rect.height;
-  canvas.width = Math.round(rect.width * dpr);
-  canvas.height = Math.round(rect.height * dpr);
+  canvasWidth = window.innerWidth;
+  canvasHeight = window.innerHeight;
+  canvas.width = Math.round(canvasWidth * dpr);
+  canvas.height = Math.round(canvasHeight * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  if (surpriseScreen.classList.contains("visible")) createHeartParticles();
+  if (surpriseScreen.classList.contains("visible")) createSceneParticles();
 }
-
 function heartPoint(t, scale) {
-  // Parametric heart curve.
   const x = 16 * Math.pow(Math.sin(t), 3);
   const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
   return { x: x * scale, y: y * scale };
 }
-
-function createHeartParticles() {
-  if (!canvasWidth || !canvasHeight) return;
-  const scale = Math.min(canvasWidth / 39, canvasHeight / 34) * .88;
-  const centerX = canvasWidth / 2;
-  const centerY = canvasHeight * .49;
-  particles = [];
-
-  // Points around the heart outline.
-  const outlineCount = 850;
-  for (let i = 0; i < outlineCount; i++) {
-    const t = (i / outlineCount) * Math.PI * 2;
-    const p = heartPoint(t, scale);
-    particles.push(makeParticle(centerX + p.x, centerY + p.y, true));
-  }
-
-  // Only the heart outline is filled with particles.
-  // This keeps the inside of the heart clean and uncluttered.
-}
-
-function makeParticle(x, y, outline) {
-  const colors = ["#ff5ca8", "#ff9bc7", "#ffd1e4", "#c78aff", "#fff0f7"];
+function makeParticle(x, y, size = 1.5) {
   return {
-    x: Math.random() * canvasWidth, y: Math.random() * canvasHeight,
-    tx: x, ty: y, size: outline ? 1 + Math.random() * 1.8 : .7 + Math.random() * 1.4,
+    x, y, size: size * (.75 + Math.random() * .65),
     color: colors[Math.floor(Math.random() * colors.length)],
-    alpha: .55 + Math.random() * .45,
-    speed: .025 + Math.random() * .055
+    alpha: Math.random() * .25, targetAlpha: .55 + Math.random() * .45,
+    phase: Math.random() * Math.PI * 2, drift: .4 + Math.random() * 1.1
   };
 }
+function getTextPoints(text, cx, cy, maxWidth, fontSize) {
+  const sample = document.createElement("canvas");
+  const sctx = sample.getContext("2d");
+  sample.width = Math.ceil(maxWidth);
+  sample.height = Math.ceil(fontSize * 1.65);
+  sctx.fillStyle = "#fff";
+  sctx.textAlign = "center";
+  sctx.textBaseline = "middle";
+  sctx.font = `700 ${fontSize}px Georgia, serif`;
+  sctx.fillText(text, sample.width / 2, sample.height / 2, maxWidth * .96);
+  const pixels = sctx.getImageData(0, 0, sample.width, sample.height).data;
+  const points = [];
+  const step = Math.max(3, Math.round(fontSize / 10));
+  for (let y = 0; y < sample.height; y += step) {
+    for (let x = 0; x < sample.width; x += step) {
+      if (pixels[(y * sample.width + x) * 4 + 3] > 100) {
+        points.push({ x: cx + x - sample.width / 2, y: cy + y - sample.height / 2 });
+      }
+    }
+  }
+  return points;
+}
+function createSceneParticles() {
+  if (!canvasWidth || !canvasHeight) return;
+  particles = [];
 
+  // Ambient particles distributed across the entire screen
+  const ambientCount = Math.min(620, Math.round(canvasWidth * canvasHeight / 1500));
+  for (let i = 0; i < ambientCount; i++) {
+    particles.push(makeParticle(Math.random() * canvasWidth, Math.random() * canvasHeight, .9 + Math.random() * .8));
+  }
+
+  // Glowing heart outline
+  const scale = Math.min(canvasWidth / 48, canvasHeight / 43, 13.5);
+  const cx = canvasWidth / 2, cy = canvasHeight * .47;
+  const heartCount = Math.min(760, Math.max(420, Math.round(canvasWidth * .9)));
+  for (let i = 0; i < heartCount; i++) {
+    const p = heartPoint(i / heartCount * Math.PI * 2, scale);
+    particles.push(makeParticle(cx + p.x, cy + p.y, 1.25));
+  }
+
+  // The message itself is sampled into individual particle positions
+  const fontSize = Math.min(42, Math.max(22, canvasWidth * .075));
+  const textPoints = getTextPoints("I LOVE YOU", cx, cy + 3, Math.min(canvasWidth * .72, 430), fontSize);
+  for (const p of textPoints) particles.push(makeParticle(p.x, p.y, 1.45));
+}
 function animateParticles() {
   cancelAnimationFrame(animationId);
-  function frame() {
+  function frame(time) {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     for (const p of particles) {
-      p.x += (p.tx - p.x) * p.speed;
-      p.y += (p.ty - p.y) * p.speed;
+      const shimmer = .78 + Math.sin(time * .0012 * p.drift + p.phase) * .22;
+      p.alpha += (p.targetAlpha * shimmer - p.alpha) * .035;
       ctx.globalAlpha = p.alpha;
       ctx.fillStyle = p.color;
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 7;
       ctx.shadowColor = p.color;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -146,67 +201,10 @@ function animateParticles() {
     ctx.shadowBlur = 0;
     animationId = requestAnimationFrame(frame);
   }
-  frame();
+  frame(0);
 }
 window.addEventListener("resize", resizeCanvas);
 replayButton.addEventListener("click", () => {
-  createHeartParticles();
+  createSceneParticles();
   animateParticles();
-});
-
-// ===== ORIGINAL CALM SYNTH MELODY (NO AUDIO FILE NEEDED) =====
-let audioContext = null;
-let musicTimer = null;
-let musicOn = false;
-let noteIndex = 0;
-const melody = [261.63, 329.63, 392.00, 329.63, 293.66, 349.23, 440.00, 349.23];
-const bass = [130.81, 146.83, 110.00, 123.47];
-
-function playNote(frequency, duration, volume, wave = "sine") {
-  if (!audioContext || !musicOn) return;
-  const oscillator = audioContext.createOscillator();
-  const gain = audioContext.createGain();
-  oscillator.type = wave;
-  oscillator.frequency.value = frequency;
-  gain.gain.setValueAtTime(0, audioContext.currentTime);
-  gain.gain.linearRampToValueAtTime(volume, audioContext.currentTime + .12);
-  gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + duration);
-  oscillator.connect(gain);
-  gain.connect(audioContext.destination);
-  oscillator.start();
-  oscillator.stop(audioContext.currentTime + duration + .03);
-}
-
-function musicStep() {
-  const i = noteIndex % melody.length;
-  playNote(melody[i], 1.8, .045);
-  if (i % 2 === 0) playNote(bass[Math.floor(i / 2) % bass.length], 3.2, .025);
-  noteIndex++;
-}
-
-function startMusic() {
-  if (!audioContext) {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    audioContext = new AudioCtx();
-  }
-  audioContext.resume();
-  musicOn = true;
-  musicButton.classList.add("playing");
-  musicLabel.textContent = "MUSIC ON";
-  clearInterval(musicTimer);
-  musicStep();
-  musicTimer = setInterval(musicStep, 850);
-}
-
-function stopMusic() {
-  musicOn = false;
-  clearInterval(musicTimer);
-  musicButton.classList.remove("playing");
-  musicLabel.textContent = "MUSIC OFF";
-}
-
-musicButton.addEventListener("click", () => {
-  if (musicOn) stopMusic();
-  else startMusic();
 });

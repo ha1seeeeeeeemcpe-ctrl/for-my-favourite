@@ -11,11 +11,11 @@
   <div class="ambient-glow glow-one"></div>
   <div class="ambient-glow glow-two"></div>
   <div class="floating-hearts" aria-hidden="true"></div>
+  <canvas id="heartCanvas" aria-hidden="true"></canvas>
 
   <header class="topbar">
     <a class="brand" href="#" aria-label="A little surprise home">
-      <span class="brand-mark">♥</span>
-      <span>FOR YOU</span>
+      <span class="brand-mark">♥</span><span>FOR YOU</span>
     </a>
     <span class="top-note">A LITTLE SURPRISE</span>
   </header>
@@ -23,15 +23,35 @@
   <main>
     <section class="lock-screen" id="lockScreen">
       <div class="eyebrow"><span></span> JUST FOR SOMEONE SPECIAL <span></span></div>
-      <div class="lock-card">
-        <div class="lock-shackle"></div>
+
+      <div class="lock-card" id="lockCard">
+        <div class="lock-shackle" id="lockShackle"></div>
         <div class="lock-body">
           <div class="lock-heart">♥</div>
-          <div class="digit-row" aria-label="Three digit access code">
-            <input id="codeInput" type="password" inputmode="numeric" autocomplete="off"
-                   maxlength="3" placeholder="•••" aria-label="Enter the three digit code">
+          <p class="keypad-title">ENTER THE SECRET CODE</p>
+
+          <div class="code-display" id="codeDisplay" aria-label="Entered code">
+            <span class="code-digit"></span>
+            <span class="code-digit"></span>
+            <span class="code-digit"></span>
           </div>
-          <p class="lock-hint" id="status">Enter the secret code</p>
+
+          <div class="keypad" id="keypad" aria-label="Number keypad">
+            <button class="key" data-key="1" type="button">1</button>
+            <button class="key" data-key="2" type="button">2</button>
+            <button class="key" data-key="3" type="button">3</button>
+            <button class="key" data-key="4" type="button">4</button>
+            <button class="key" data-key="5" type="button">5</button>
+            <button class="key" data-key="6" type="button">6</button>
+            <button class="key" data-key="7" type="button">7</button>
+            <button class="key" data-key="8" type="button">8</button>
+            <button class="key" data-key="9" type="button">9</button>
+            <button class="key key-action" data-key="clear" type="button" aria-label="Clear code">C</button>
+            <button class="key" data-key="0" type="button">0</button>
+            <button class="key key-action" data-key="back" type="button" aria-label="Delete last digit">⌫</button>
+          </div>
+
+          <p class="lock-hint" id="status" aria-live="polite">A little surprise is waiting...</p>
           <button class="unlock-button" id="unlockButton" type="button">
             <span>UNLOCK</span><span class="button-arrow">↗</span>
           </button>
@@ -42,18 +62,11 @@
 
     <section class="surprise-screen" id="surpriseScreen" aria-hidden="true">
       <div class="surprise-caption">A MESSAGE FROM MY HEART</div>
-      <div class="heart-stage">
-        <canvas id="heartCanvas"></canvas>
-        <div class="heart-message">I LOVE YOU</div>
-      </div>
+      <div class="heart-stage" aria-hidden="true"></div>
       <p class="surprise-subtitle">You make my world a little brighter.</p>
       <button class="replay-button" id="replayButton" type="button">MAKE IT SPARKLE AGAIN ✦</button>
     </section>
   </main>
-
-  <button class="music-button" id="musicButton" type="button" aria-label="Toggle music">
-    <span class="music-icon">♫</span><span id="musicLabel">MUSIC OFF</span>
-  </button>
 
   <footer>MADE WITH <span>♥</span> FOR YOU</footer>
   <script src="script.js"></script>
