@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#160d20">
+  <title>A Little Surprise</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="ambient-glow glow-one"></div>
+  <div class="ambient-glow glow-two"></div>
+  <div class="floating-hearts" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="A little surprise home">
+      <span class="brand-mark">♥</span>
+      <span>FOR YOU</span>
+    </a>
+    <span class="top-note">A LITTLE SURPRISE</span>
+  </header>
+
+  <main>
+    <section class="lock-screen" id="lockScreen">
+      <div class="eyebrow"><span></span> JUST FOR SOMEONE SPECIAL <span></span></div>
+      <div class="lock-card">
+        <div class="lock-shackle"></div>
+        <div class="lock-body">
+          <div class="lock-heart">♥</div>
+          <div class="digit-row" aria-label="Three digit access code">
+            <input id="codeInput" type="password" inputmode="numeric" autocomplete="off"
+                   maxlength="3" placeholder="•••" aria-label="Enter the three digit code">
+          </div>
+          <p class="lock-hint" id="status">Enter the secret code</p>
+          <button class="unlock-button" id="unlockButton" type="button">
+            <span>UNLOCK</span><span class="button-arrow">↗</span>
+          </button>
+        </div>
+      </div>
+      <p class="little-note">A tiny world made with love.</p>
+    </section>
+
+    <section class="surprise-screen" id="surpriseScreen" aria-hidden="true">
+      <div class="surprise-caption">A MESSAGE FROM MY HEART</div>
+      <div class="heart-stage">
+        <canvas id="heartCanvas"></canvas>
+        <div class="heart-message">I LOVE YOU</div>
+      </div>
+      <p class="surprise-subtitle">You make my world a little brighter.</p>
+      <button class="replay-button" id="replayButton" type="button">MAKE IT SPARKLE AGAIN ✦</button>
+    </section>
+  </main>
+
+  <button class="music-button" id="musicButton" type="button" aria-label="Toggle music">
+    <span class="music-icon">♫</span><span id="musicLabel">MUSIC OFF</span>
+  </button>
+
+  <footer>MADE WITH <span>♥</span> FOR YOU</footer>
+  <script src="script.js"></script>
+</body>
+</html>
