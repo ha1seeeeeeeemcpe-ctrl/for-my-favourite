@@ -78,7 +78,7 @@ main { flex:1; display:grid; place-items:center; padding:38px 20px 65px; positio
 .surprise-screen { display:none; width:min(100%,700px); text-align:center; opacity:0; transform:translateY(18px); }
 .surprise-screen.visible { display:block; animation:reveal .85s ease forwards; }
 .surprise-caption { color:#e7a9d1; font-size:9px; letter-spacing:.3em; margin-bottom:12px; }
-.heart-stage { width:100%; height:1px; margin:0 auto; position:relative; }
+.heart-stage { width:min(100%,560px); height:min(56vh,460px); min-height:300px; margin:0 auto; position:relative; }
 #heartCanvas { position:fixed; inset:0; width:100vw; height:100vh; display:block; pointer-events:none; z-index:1; opacity:0; transition:opacity .5s ease; }
 body.particles-active #heartCanvas { opacity:1; }
 .surprise-screen { position:relative; z-index:2; }
@@ -105,7 +105,7 @@ footer span { color:var(--pink); padding:0 3px; }
   main { padding:30px 15px 75px; }
   .eyebrow { font-size:8px; letter-spacing:.17em; gap:8px; }
   .lock-card { transform:scale(.96); transform-origin:top center; }
-  .heart-stage { width:100%; height:1px; }
+  .heart-stage { width:100%; height:min(54vh,430px); min-height:285px; }
   .surprise-subtitle { font-size:15px; }
   footer { padding-bottom:18px; font-size:8px; }
 }

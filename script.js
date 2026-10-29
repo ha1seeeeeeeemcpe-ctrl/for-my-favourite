@@ -101,98 +101,177 @@ function unlock() {
 }
 unlockButton.addEventListener("click", unlock);
 
-// Full-screen particle scene
+// Full-screen particle scene.
+// The lock screen above this section is intentionally left unchanged.
 function resizeCanvas() {
+  if (!canvas || !ctx) return;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   canvasWidth = window.innerWidth;
   canvasHeight = window.innerHeight;
   canvas.width = Math.round(canvasWidth * dpr);
   canvas.height = Math.round(canvasHeight * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  if (surpriseScreen.classList.contains("visible")) createSceneParticles();
+
+  if (surpriseScreen.classList.contains("visible")) {
+    createSceneParticles();
+    animateParticles();
+  }
 }
+
 function heartPoint(t, scale) {
   const x = 16 * Math.pow(Math.sin(t), 3);
-  const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+  const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
   return { x: x * scale, y: y * scale };
 }
-function makeParticle(x, y, size = 1.5) {
+
+function makeParticle(x, y, size = 1.5, target = null) {
   return {
-    x, y, size: size * (.75 + Math.random() * .65),
+    x,
+    y,
+    startX: x,
+    startY: y,
+    targetX: target ? target.x : x,
+    targetY: target ? target.y : y,
+    size: size * (0.75 + Math.random() * 0.65),
     color: colors[Math.floor(Math.random() * colors.length)],
-    alpha: Math.random() * .25, targetAlpha: .55 + Math.random() * .45,
-    phase: Math.random() * Math.PI * 2, drift: .4 + Math.random() * 1.1
+    alpha: target ? 0 : Math.random() * 0.28,
+    targetAlpha: target ? 0.82 + Math.random() * 0.18 : 0.18 + Math.random() * 0.3,
+    phase: Math.random() * Math.PI * 2,
+    drift: 0.4 + Math.random() * 1.1,
+    delay: target ? Math.random() * 420 : 0,
+    isShape: Boolean(target)
   };
 }
+
 function getTextPoints(text, cx, cy, maxWidth, fontSize) {
   const sample = document.createElement("canvas");
   const sctx = sample.getContext("2d");
-  sample.width = Math.ceil(maxWidth);
-  sample.height = Math.ceil(fontSize * 1.65);
+  sample.width = Math.max(1, Math.ceil(maxWidth));
+  sample.height = Math.max(1, Math.ceil(fontSize * 1.8));
+
   sctx.fillStyle = "#fff";
   sctx.textAlign = "center";
   sctx.textBaseline = "middle";
   sctx.font = `700 ${fontSize}px Georgia, serif`;
-  sctx.fillText(text, sample.width / 2, sample.height / 2, maxWidth * .96);
+  sctx.fillText(text, sample.width / 2, sample.height / 2, maxWidth * 0.96);
+
   const pixels = sctx.getImageData(0, 0, sample.width, sample.height).data;
   const points = [];
   const step = Math.max(3, Math.round(fontSize / 10));
+
   for (let y = 0; y < sample.height; y += step) {
     for (let x = 0; x < sample.width; x += step) {
       if (pixels[(y * sample.width + x) * 4 + 3] > 100) {
-        points.push({ x: cx + x - sample.width / 2, y: cy + y - sample.height / 2 });
+        points.push({
+          x: cx + x - sample.width / 2,
+          y: cy + y - sample.height / 2
+        });
       }
     }
   }
   return points;
 }
+
 function createSceneParticles() {
-  if (!canvasWidth || !canvasHeight) return;
+  if (!canvasWidth || !canvasHeight || !ctx) return;
   particles = [];
 
-  // Ambient particles distributed across the entire screen
-  const ambientCount = Math.min(620, Math.round(canvasWidth * canvasHeight / 1500));
-  for (let i = 0; i < ambientCount; i++) {
-    particles.push(makeParticle(Math.random() * canvasWidth, Math.random() * canvasHeight, .9 + Math.random() * .8));
-  }
+  // Measure the reserved area between the heading and the subtitle.
+  // The lock screen and its markup/styles are not changed.
+  const stage = document.querySelector(".heart-stage");
+  const rect = stage ? stage.getBoundingClientRect() : {
+    left: 0, top: 0, width: canvasWidth, height: canvasHeight * 0.58
+  };
 
-  // Glowing heart outline
-  const scale = Math.min(canvasWidth / 48, canvasHeight / 43, 13.5);
-  const cx = canvasWidth / 2, cy = canvasHeight * .47;
-  const heartCount = Math.min(760, Math.max(420, Math.round(canvasWidth * .9)));
+  const stageWidth = Math.max(220, rect.width || canvasWidth * 0.8);
+  const stageHeight = Math.max(260, rect.height || canvasHeight * 0.55);
+  const cx = rect.left + stageWidth / 2;
+  const cy = rect.top + stageHeight / 2;
+  const scale = Math.min(stageWidth / 37, stageHeight / 36, 12.5);
+
+  // Every heart/text particle starts at a random point across the full viewport.
+  // Their destinations are the sampled heart outline and the particle lettering.
+  const heartCount = Math.min(760, Math.max(430, Math.round(stageWidth * 1.15)));
   for (let i = 0; i < heartCount; i++) {
-    const p = heartPoint(i / heartCount * Math.PI * 2, scale);
-    particles.push(makeParticle(cx + p.x, cy + p.y, 1.25));
+    const point = heartPoint((i / heartCount) * Math.PI * 2, scale);
+    const originX = Math.random() * canvasWidth;
+    const originY = Math.random() * canvasHeight;
+    particles.push(makeParticle(originX, originY, 1.45, {
+      x: cx + point.x,
+      y: cy + point.y
+    }));
   }
 
-  // The message itself is sampled into individual particle positions
-  const fontSize = Math.min(42, Math.max(22, canvasWidth * .075));
-  const textPoints = getTextPoints("I LOVE YOU", cx, cy + 3, Math.min(canvasWidth * .72, 430), fontSize);
-  for (const p of textPoints) particles.push(makeParticle(p.x, p.y, 1.45));
+  const fontSize = Math.min(37, Math.max(20, stageWidth * 0.072));
+  const textPoints = getTextPoints(
+    "I LOVE YOU",
+    cx,
+    cy + stageHeight * 0.015,
+    Math.min(stageWidth * 0.76, 430),
+    fontSize
+  );
+
+  for (const point of textPoints) {
+    const originX = Math.random() * canvasWidth;
+    const originY = Math.random() * canvasHeight;
+    particles.push(makeParticle(originX, originY, 1.55, point));
+  }
+
+  // A smaller layer of soft ambient sparkles remains around the formed shape.
+  const ambientCount = Math.min(170, Math.round(canvasWidth * canvasHeight / 5200));
+  for (let i = 0; i < ambientCount; i++) {
+    particles.push(makeParticle(
+      Math.random() * canvasWidth,
+      Math.random() * canvasHeight,
+      0.8 + Math.random() * 0.8
+    ));
+  }
 }
+
 function animateParticles() {
+  if (!ctx) return;
   cancelAnimationFrame(animationId);
-  function frame(time) {
+  const startTime = performance.now();
+  const gatherDuration = 2450;
+
+  function frame(now) {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
     for (const p of particles) {
-      const shimmer = .78 + Math.sin(time * .0012 * p.drift + p.phase) * .22;
-      p.alpha += (p.targetAlpha * shimmer - p.alpha) * .035;
-      ctx.globalAlpha = p.alpha;
+      if (p.isShape) {
+        const elapsed = Math.max(0, now - startTime - p.delay);
+        const progress = Math.min(1, elapsed / gatherDuration);
+        // Smooth ease-out: particles visibly travel in from across the screen.
+        const eased = 1 - Math.pow(1 - progress, 3);
+        p.x = p.startX + (p.targetX - p.startX) * eased;
+        p.y = p.startY + (p.targetY - p.startY) * eased;
+        p.alpha = Math.min(p.targetAlpha, progress * 1.45);
+      } else {
+        p.alpha += (p.targetAlpha - p.alpha) * 0.018;
+      }
+
+      const shimmer = 0.78 + Math.sin(now * 0.0012 * p.drift + p.phase) * 0.22;
+      ctx.globalAlpha = Math.max(0, p.alpha * shimmer);
       ctx.fillStyle = p.color;
-      ctx.shadowBlur = 7;
+      ctx.shadowBlur = p.isShape ? 8 : 5;
       ctx.shadowColor = p.color;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
     }
+
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
     animationId = requestAnimationFrame(frame);
   }
-  frame(0);
+
+  frame(startTime);
 }
-window.addEventListener("resize", resizeCanvas);
+
+// Replay starts a fresh gathering animation from new random positions.
 replayButton.addEventListener("click", () => {
   createSceneParticles();
   animateParticles();
 });
+
+window.addEventListener("resize", resizeCanvas);
